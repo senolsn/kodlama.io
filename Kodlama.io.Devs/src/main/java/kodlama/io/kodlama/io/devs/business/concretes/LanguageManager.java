@@ -1,11 +1,16 @@
 package kodlama.io.kodlama.io.devs.business.concretes;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import kodlama.io.kodlama.io.devs.business.abstracts.LanguageService;
+import kodlama.io.kodlama.io.devs.business.requests.CreateLanguageRequest;
+import kodlama.io.kodlama.io.devs.business.requests.DeleteLanguageRequest;
+import kodlama.io.kodlama.io.devs.business.requests.UpdateLanguageRequest;
+import kodlama.io.kodlama.io.devs.business.responses.GetAllLanguageResponse;
 import kodlama.io.kodlama.io.devs.dataAccess.abstracts.LanguageRepository;
 import kodlama.io.kodlama.io.devs.entities.concretes.Language;
 
@@ -20,38 +25,71 @@ public class LanguageManager implements LanguageService {
 	}
 
 	@Override
-	public void add(Language language) {
+	public void add(CreateLanguageRequest languageRequest) {
+		Language language = new Language();
+		language.setName(languageRequest.getName());
+
 		if (language.getName().isEmpty()) {
 			System.out.println("İsim Boş Bırakılamaz !");
-		} else if (checkLanguageName(languageRepository.getAll(), language) == false) {
+		} else if (checkLanguageName(languageRepository.findAll(), language) == false) {
 			System.out.println("Eklemeye Çalıştığınız Dil Zaten Mevcut !");
 		} else {
-			languageRepository.add(language);
+			languageRepository.save(language);
 		}
 
 	}
 
 	@Override
-	public void update(Language language, String name) {
-		languageRepository.update(language, name);
+	public void update(UpdateLanguageRequest languageRequest) {
+		Language language = languageRepository.findById(languageRequest.getId());
+		language.setId(languageRequest.getId());
+		language.setName(languageRequest.getName());
+		languageRepository.save(language);
 
 	}
 
 	@Override
-	public void delete(Language language) {
+	public void delete(DeleteLanguageRequest languageRequest) {
+		Language language = languageRepository.findById(languageRequest.getId());
+		language.setId(languageRequest.getId());
 		languageRepository.delete(language);
 
 	}
 
 	@Override
-	public List<Language> getAll() {
+	public List<GetAllLanguageResponse> getAll() {
+		List<Language> languages = languageRepository.findAll();
+		List<GetAllLanguageResponse> languagesResponse = new ArrayList<>();
 
-		return languageRepository.getAll();
+		for (Language language : languages) {
+			GetAllLanguageResponse response = new GetAllLanguageResponse();
+			response.setId(language.getId());
+			response.setName(language.getName());
+			languagesResponse.add(response);
+		}
+
+		return languagesResponse;
 	}
 
 	@Override
-	public Language getById(int id) {
-		return languageRepository.getById(id);
+	public GetAllLanguageResponse findById(int id) {
+		Language language = languageRepository.findById(id);
+		GetAllLanguageResponse response = new GetAllLanguageResponse();
+
+		response.setId(language.getId());
+		response.setName(language.getName());
+		return response;
+	}
+
+	@Override
+	public GetAllLanguageResponse findByName(String name) {
+		Language language = languageRepository.findByName(name);
+		GetAllLanguageResponse response = new GetAllLanguageResponse();
+
+		response.setId(language.getId());
+		response.setName(language.getName());
+
+		return response;
 	}
 
 	public boolean checkLanguageName(List<Language> languages, Language language) {
