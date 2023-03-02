@@ -1,102 +1,89 @@
 package kodlama.io.kodlama.io.devs.business.concretes;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import kodlama.io.kodlama.io.devs.business.abstracts.LanguageService;
+import kodlama.io.kodlama.io.devs.business.core.utilities.mappers.ModelMapperService;
 import kodlama.io.kodlama.io.devs.business.requests.CreateLanguageRequest;
-import kodlama.io.kodlama.io.devs.business.requests.DeleteLanguageRequest;
 import kodlama.io.kodlama.io.devs.business.requests.UpdateLanguageRequest;
 import kodlama.io.kodlama.io.devs.business.responses.GetAllLanguageResponse;
+import kodlama.io.kodlama.io.devs.business.responses.GetByIdLanguageResponse;
+import kodlama.io.kodlama.io.devs.business.responses.GetByNameLanguageResponse;
 import kodlama.io.kodlama.io.devs.dataAccess.abstracts.LanguageRepository;
 import kodlama.io.kodlama.io.devs.entities.concretes.Language;
+import lombok.AllArgsConstructor;
 
 @Service
+@AllArgsConstructor
 public class LanguageManager implements LanguageService {
 
 	private LanguageRepository languageRepository;
-
-	@Autowired
-	public LanguageManager(LanguageRepository languageRepository) {
-		this.languageRepository = languageRepository;
-	}
+	private ModelMapperService modelMapperService;
 
 	@Override
-	public void add(CreateLanguageRequest languageRequest) {
-		Language language = new Language();
-		language.setName(languageRequest.getName());
+	public void add(CreateLanguageRequest languageRequest) throws Exception {
+		if (checkIfProgrammingLanguageExists(languageRequest) == false) {
 
-		if (language.getName().isEmpty()) {
-			System.out.println("İsim Boş Bırakılamaz !");
-		} else if (checkLanguageName(languageRepository.findAll(), language) == false) {
-			System.out.println("Eklemeye Çalıştığınız Dil Zaten Mevcut !");
+			throw new Exception("Hata ! Aynı isim zaten mevcut");
+		} else if (languageRequest.getName().isEmpty()) {
+			throw new Exception("Hata ! İsim Boş Bırakılamaz");
 		} else {
-			languageRepository.save(language);
+			Language request = this.modelMapperService.forRequest().map(languageRequest, Language.class);
+			languageRepository.save(request);
 		}
 
 	}
 
 	@Override
 	public void update(UpdateLanguageRequest languageRequest) {
-		Language language = languageRepository.findById(languageRequest.getId());
-		language.setId(languageRequest.getId());
-		language.setName(languageRequest.getName());
-		languageRepository.save(language);
+
+		Language request = this.modelMapperService.forRequest().map(languageRequest, Language.class);
+		this.languageRepository.save(request);
 
 	}
 
 	@Override
-	public void delete(DeleteLanguageRequest languageRequest) {
-		Language language = languageRepository.findById(languageRequest.getId());
-		language.setId(languageRequest.getId());
-		languageRepository.delete(language);
+	public void delete(int id) {
+		languageRepository.findById(id).orElseThrow();
+		this.languageRepository.deleteById(id);
 
 	}
 
 	@Override
 	public List<GetAllLanguageResponse> getAll() {
-		List<Language> languages = languageRepository.findAll();
-		List<GetAllLanguageResponse> languagesResponse = new ArrayList<>();
 
-		for (Language language : languages) {
-			GetAllLanguageResponse response = new GetAllLanguageResponse();
-			response.setId(language.getId());
-			response.setName(language.getName());
-			languagesResponse.add(response);
-		}
+		List<Language> brands = this.languageRepository.findAll();
+		List<GetAllLanguageResponse> response = brands.stream()
+				.map(brand -> this.modelMapperService.forResponse().map(brand, GetAllLanguageResponse.class)).toList();
+		return response;
 
-		return languagesResponse;
 	}
 
 	@Override
-	public GetAllLanguageResponse findById(int id) {
-		Language language = languageRepository.findById(id);
-		GetAllLanguageResponse response = new GetAllLanguageResponse();
+	public GetByIdLanguageResponse getById(int id) {
+		Language language = languageRepository.findById(id).orElseThrow();
+		GetByIdLanguageResponse response = this.modelMapperService.forResponse().map(language,
+				GetByIdLanguageResponse.class);
 
-		response.setId(language.getId());
-		response.setName(language.getName());
 		return response;
 	}
 
 	@Override
-	public GetAllLanguageResponse findByName(String name) {
-		Language language = languageRepository.findByName(name);
-		GetAllLanguageResponse response = new GetAllLanguageResponse();
+	public GetByNameLanguageResponse findByName(String name) {
 
-		response.setId(language.getId());
-		response.setName(language.getName());
+		GetByNameLanguageResponse response = this.modelMapperService.forResponse()
+				.map(languageRepository.findByName(name), GetByNameLanguageResponse.class);
 
 		return response;
 	}
 
-	public boolean checkLanguageName(List<Language> languages, Language language) {
+	public boolean checkIfProgrammingLanguageExists(CreateLanguageRequest languageRequest) {
 
-		for (Language lang : languages) {
+		for (Language lang : this.languageRepository.findAll()) {
 
-			if (lang.getName() == language.getName()) {
+			if (lang.getName().equals(languageRequest.getName()) || languageRequest.getName() == null) {
 				return false;
 			}
 		}

@@ -6,7 +6,7 @@ import kodlama.io.kodlama.io.devs.entities.concretes.Language;
 
 public interface LanguageRepository extends JpaRepository<Language, Integer> {
 	
-	Language findById(int id);
+	
 	Language findByName(String name);
 
 }
